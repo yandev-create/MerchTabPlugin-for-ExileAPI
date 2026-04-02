@@ -1,0 +1,10 @@
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Temp\MerchTabPlugin\MerchTabPlugin.deps.json
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Temp\MerchTabPlugin\MerchTabPlugin.dll
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\MerchTabPlugin.csproj.AssemblyReference.cache
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\MerchTabPlugin.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\MerchTabPlugin.AssemblyInfoInputs.cache
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\MerchTabPlugin.AssemblyInfo.cs
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\MerchTabPlugin.csproj.CoreCompileInputs.cache
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\MerchTabPlugin.dll
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\refint\MerchTabPlugin.dll
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\ref\MerchTabPlugin.dll
