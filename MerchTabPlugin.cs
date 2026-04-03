@@ -9,6 +9,7 @@ using MerchTabPlugin.Models;
 using MerchTabPlugin.Services;
 using Newtonsoft.Json;
 using SharpDX;
+using Color = SharpDX.Color;
 
 namespace MerchTabPlugin;
 
@@ -298,9 +299,9 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
                     continue;
                 }
 
-                await RandomDelay(280, 430);
+                await RandomDelay(320, 560);
                 await DumpCurrentlyActiveMerchantTabItemsInternal(withPrices);
-                await RandomDelay(120, 220);
+                await RandomDelay(180, 320);
             }
 
             _lastStatus = withPrices ? "Save all tab items with price complete" : "Save all tab items without price complete";
@@ -531,7 +532,7 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
             return 0;
         }
 
-        await RandomDelay(280, 430);
+        await RandomDelay(380, 620);
 
         dynamic ingameUi = GameController?.Game?.IngameState?.IngameUi;
         if (ingameUi == null)
@@ -577,7 +578,7 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
             changedCount++;
 
             _storage.SaveAllTabsFile(allTabs);
-            await RandomDelay(140, 260);
+            await RandomDelay(220, 420);
         }
 
         targetTab.LastScanned = DateTime.Now;
@@ -635,13 +636,8 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
             float cx = item.X + item.W / 2f;
             float cy = item.Y + item.H / 2f;
 
-            Input.SetCursorPos(new System.Numerics.Vector2(win.X + cx, win.Y + cy));
-            await RandomDelay(150, 260);
-
-            Input.RightDown();
-            await RandomDelay(35, 75);
-            Input.RightUp();
-            await RandomDelay(220, 360);
+            await _ui.MoveAndRightClick(new System.Numerics.Vector2(win.X + cx, win.Y + cy));
+            await RandomDelay(240, 430);
 
             dynamic ingameUi = GameController?.Game?.IngameState?.IngameUi;
             if (ingameUi == null)
@@ -656,17 +652,17 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
                 return false;
             }
 
-            if (!await ClickElementCenter(valueInput))
+            if (!await _ui.ClickElementCenterHumanized(valueInput))
                 return false;
 
-            await RandomDelay(90, 170);
+            await RandomDelay(110, 220);
             ReplaceFocusedText(newAmount.ToString());
-            await RandomDelay(120, 220);
+            await RandomDelay(140, 260);
 
-            if (!await ClickElementCenter(listItem))
+            if (!await _ui.ClickElementCenterHumanized(listItem))
                 return false;
 
-            await RandomDelay(220, 380);
+            await RandomDelay(260, 460);
             return true;
         }
         catch (Exception ex)
@@ -676,43 +672,14 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
         }
     }
 
-    private async Task<bool> ClickElementCenter(dynamic element)
-    {
-        try
-        {
-            dynamic rect = null;
-            try { rect = element.GetClientRect(); } catch { }
-
-            if (rect == null)
-                return false;
-
-            float x = (float)rect.X + (float)rect.Width / 2f;
-            float y = (float)rect.Y + (float)rect.Height / 2f;
-            var win = GameController.Window.GetWindowRectangle();
-
-            Input.SetCursorPos(new System.Numerics.Vector2(win.X + x, win.Y + y));
-            await RandomDelay(70, 140);
-            Input.LeftDown();
-            await RandomDelay(30, 70);
-            Input.LeftUp();
-            await RandomDelay(80, 150);
-
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
     private void ReplaceFocusedText(string text)
     {
         SetClipboardTextSafe(text);
-        SleepRandom(25, 55);
-        SendCtrlA();
-        SleepRandom(25, 55);
-        SendCtrlV();
         SleepRandom(35, 70);
+        SendCtrlA();
+        SleepRandom(35, 70);
+        SendCtrlV();
+        SleepRandom(45, 90);
     }
 
     private void SendCtrlA()
@@ -720,11 +687,11 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
         try
         {
             Input.KeyDown(Keys.ControlKey);
-            SleepRandom(15, 30);
+            SleepRandom(18, 34);
             Input.KeyDown(Keys.A);
-            SleepRandom(20, 40);
+            SleepRandom(24, 48);
             Input.KeyUp(Keys.A);
-            SleepRandom(15, 30);
+            SleepRandom(18, 34);
             Input.KeyUp(Keys.ControlKey);
         }
         catch
@@ -737,11 +704,11 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
         try
         {
             Input.KeyDown(Keys.ControlKey);
-            SleepRandom(15, 30);
+            SleepRandom(18, 34);
             Input.KeyDown(Keys.V);
-            SleepRandom(20, 40);
+            SleepRandom(24, 48);
             Input.KeyUp(Keys.V);
-            SleepRandom(15, 30);
+            SleepRandom(18, 34);
             Input.KeyUp(Keys.ControlKey);
         }
         catch
@@ -793,7 +760,7 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
         if (!opened)
             return result;
 
-        await RandomDelay(280, 430);
+        await RandomDelay(360, 620);
 
         dynamic refreshedUi = GameController?.Game?.IngameState?.IngameUi;
         if (refreshedUi == null)
@@ -1046,7 +1013,7 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
         if (!opened)
             return result;
 
-        await RandomDelay(280, 430);
+        await RandomDelay(360, 620);
 
         dynamic refreshedUi = GameController?.Game?.IngameState?.IngameUi;
         if (refreshedUi == null)

@@ -21,6 +21,24 @@ public class MerchantScanService
         _log = log;
     }
 
+    private int NextDelay(int minInclusive, int maxInclusive)
+    {
+        lock (_rng)
+        {
+            return _rng.Next(minInclusive, maxInclusive + 1);
+        }
+    }
+
+    private async Task RandomDelay(int minInclusive, int maxInclusive)
+    {
+        await Task.Delay(NextDelay(minInclusive, maxInclusive));
+    }
+
+    private void SleepRandom(int minInclusive, int maxInclusive)
+    {
+        Thread.Sleep(NextDelay(minInclusive, maxInclusive));
+    }
+
     public void CollectInventoryItems(dynamic el, string path, List<MerchantItemInfo> items)
     {
         if (el == null)
@@ -87,6 +105,7 @@ public class MerchantScanService
         if (items == null || items.Count == 0)
             return;
 
+        var ui = new MerchantUiService(_gc);
         var win = _gc.Window.GetWindowRectangle();
 
         try
@@ -98,21 +117,21 @@ public class MerchantScanService
                 float cx = item.X + item.W / 2f;
                 float cy = item.Y + item.H / 2f;
 
-                Input.SetCursorPos(new System.Numerics.Vector2(win.X + cx, win.Y + cy));
-                await Task.Delay(Next(170, 300));
+                await ui.MoveMouseHumanized(new System.Numerics.Vector2(win.X + cx, win.Y + cy));
+                await RandomDelay(220, 480);
 
                 string before = GetClipboardTextSafe();
                 SetClipboardTextSafe(string.Empty);
-                await Task.Delay(Next(30, 70));
+                await RandomDelay(40, 90);
 
                 SendCtrlAltC();
-                await Task.Delay(Next(230, 360));
+                await RandomDelay(260, 460);
 
                 string copied = GetClipboardTextSafe();
 
                 if (string.IsNullOrWhiteSpace(copied) || copied == before)
                 {
-                    await Task.Delay(Next(140, 260));
+                    await RandomDelay(180, 340);
                     copied = GetClipboardTextSafe();
                 }
 
@@ -123,7 +142,7 @@ public class MerchantScanService
                     ParsePriceFromCopiedText(item, copied);
                 }
 
-                await Task.Delay(Next(40, 95));
+                await RandomDelay(70, 160);
             }
         }
         catch (Exception ex)
@@ -191,33 +210,20 @@ public class MerchantScanService
         try
         {
             Input.KeyDown(Keys.ControlKey);
-            SleepRandom(15, 35);
+            SleepRandom(20, 40);
             Input.KeyDown(Keys.Menu);
-            SleepRandom(15, 35);
+            SleepRandom(20, 40);
             Input.KeyDown(Keys.C);
-            SleepRandom(20, 45);
+            SleepRandom(24, 52);
             Input.KeyUp(Keys.C);
-            SleepRandom(15, 35);
+            SleepRandom(18, 36);
             Input.KeyUp(Keys.Menu);
-            SleepRandom(15, 35);
+            SleepRandom(18, 36);
             Input.KeyUp(Keys.ControlKey);
         }
         catch
         {
         }
-    }
-
-    private int Next(int minInclusive, int maxInclusive)
-    {
-        lock (_rng)
-        {
-            return _rng.Next(minInclusive, maxInclusive + 1);
-        }
-    }
-
-    private void SleepRandom(int minInclusive, int maxInclusive)
-    {
-        Thread.Sleep(Next(minInclusive, maxInclusive));
     }
 
     private string GetClipboardTextSafe()
