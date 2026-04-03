@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MerchTabPlugin")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+db22e20dc88c6b4de3a7442acad847654c36135a")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7f938e1f06b0ae1a2255c40b1343a41f870cf38b")]
 [assembly: System.Reflection.AssemblyProductAttribute("MerchTabPlugin")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MerchTabPlugin")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

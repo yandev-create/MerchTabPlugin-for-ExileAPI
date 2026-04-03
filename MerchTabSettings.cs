@@ -15,4 +15,8 @@ public class MerchTabSettings : ISettings
     public Dictionary<int, bool> SelectedTabs { get; set; } = new Dictionary<int, bool>();
 
     public int HighlightOlderThanHours { get; set; } = 12;
+    public int HighlightLastRepriceOlderThanHours { get; set; } = 10;
+
+    public int RepriceOlderThanHours { get; set; } = 12;
+    public int RepricePercent { get; set; } = 10;
 }
