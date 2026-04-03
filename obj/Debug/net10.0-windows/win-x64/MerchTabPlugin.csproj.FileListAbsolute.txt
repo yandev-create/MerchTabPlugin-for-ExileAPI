@@ -8,3 +8,4 @@ C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\o
 C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\MerchTabPlugin.dll
 C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\refint\MerchTabPlugin.dll
 C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\ref\MerchTabPlugin.dll
+C:\Users\yanik\Documents\ExileApi-Compiled-328.7\Plugins\Source\MerchTabPlugin\obj\Debug\net10.0-windows\win-x64\MerchTabPlugin.sourcelink.json

@@ -21,6 +21,8 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
     private static readonly int[] MerchantTabPagesPath = { 44, 2, 0, 0, 1, 1, 0, 0, 1, 1 };
 
     private bool _isRunningGetItems = false;
+    private bool _isRunningAddNewItems = false;
+    private bool _isRunningUpdateItems = false;
     private string _lastStatus = "";
 
     private bool _highlightEnabled = false;
@@ -113,7 +115,7 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
             return;
 
         _isRunningGetItems = true;
-        _lastStatus = withPrices ? "Getting items with prices..." : "Getting items...";
+        _lastStatus = withPrices ? "Saving items with price..." : "Saving items without price...";
         Log(withPrices ? "GET ITEMS+PRICES: started" : "GET ITEMS: started");
 
         try
@@ -161,7 +163,7 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
                 await Task.Delay(150);
             }
 
-            _lastStatus = withPrices ? "Get Items With Prices complete" : "Get Items complete";
+            _lastStatus = withPrices ? "Save items with price complete" : "Save items without price complete";
         }
         catch (Exception ex)
         {
@@ -171,6 +173,375 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
         finally
         {
             _isRunningGetItems = false;
+        }
+    }
+
+    private async Task AddNewItemsToCurrentActiveTab()
+    {
+        if (_isRunningAddNewItems)
+            return;
+
+        _isRunningAddNewItems = true;
+        _lastStatus = "Checking current tab for new items...";
+        Log("ADD NEW ITEMS: started");
+
+        try
+        {
+            dynamic ingameUi = GameController?.Game?.IngameState?.IngameUi;
+            if (ingameUi == null)
+            {
+                Log("ADD NEW ITEMS: IngameUi is null");
+                return;
+            }
+
+            dynamic dropdown = GetElementByPath(ingameUi, MerchantTabDropdownPath);
+            dynamic pages = GetElementByPath(ingameUi, MerchantTabPagesPath);
+
+            if (dropdown == null || pages == null)
+            {
+                Log("ADD NEW ITEMS: Merchant UI not found.");
+                return;
+            }
+
+            List<MerchantTabRow> tabRows = GetMerchantTabRowsFromKnownDropdown(dropdown);
+            int activePageIndex = GetActivePageIndex(pages);
+
+            if (activePageIndex < 0)
+            {
+                Log("ADD NEW ITEMS: Could not find active merchant tab page.");
+                return;
+            }
+
+            dynamic activePage = null;
+            try { activePage = pages.GetChildAtIndex(activePageIndex); } catch { }
+
+            if (activePage == null)
+            {
+                Log("ADD NEW ITEMS: Active page element is null.");
+                return;
+            }
+
+            var currentItems = new List<MerchantItemInfo>();
+            CollectInventoryItems(activePage, "activePage/" + activePageIndex, currentItems);
+
+            string activeTabName = "Unknown";
+            if (activePageIndex >= 0 && activePageIndex < tabRows.Count)
+                activeTabName = CleanupTabName(tabRows[activePageIndex].Name);
+
+            if (!string.IsNullOrWhiteSpace(activeTabName) && activeTabName != "-" && activeTabName != "Unknown")
+            {
+                if (!Settings.TabNames.ContainsKey(activePageIndex) || Settings.TabNames[activePageIndex] != activeTabName)
+                    Settings.TabNames[activePageIndex] = activeTabName;
+            }
+
+            MerchAllTabsDump allTabs = LoadAllTabsFile();
+            allTabs.LastUpdated = DateTime.Now;
+
+            if (allTabs.KnownTabs == null)
+                allTabs.KnownTabs = new List<MerchKnownTab>();
+
+            allTabs.KnownTabs.Clear();
+            for (int i = 0; i < Settings.ScannedTabIndices.Count; i++)
+            {
+                int idx;
+                if (!int.TryParse(Settings.ScannedTabIndices[i], out idx))
+                    continue;
+
+                string name = "(unknown)";
+                if (Settings.TabNames.ContainsKey(idx))
+                    name = CleanupTabName(Settings.TabNames[idx]);
+
+                bool selected = Settings.SelectedTabs.ContainsKey(idx) && Settings.SelectedTabs[idx];
+
+                allTabs.KnownTabs.Add(new MerchKnownTab
+                {
+                    Index = idx,
+                    Name = name,
+                    Selected = selected
+                });
+            }
+
+            MerchTabDump targetTab = null;
+            for (int i = 0; i < allTabs.Tabs.Count; i++)
+            {
+                if (allTabs.Tabs[i].TabIndex == activePageIndex)
+                {
+                    targetTab = allTabs.Tabs[i];
+                    break;
+                }
+            }
+
+            if (targetTab == null)
+            {
+                targetTab = new MerchTabDump
+                {
+                    TabIndex = activePageIndex,
+                    TabName = activeTabName
+                };
+                allTabs.Tabs.Add(targetTab);
+            }
+
+            if (targetTab.Items == null)
+                targetTab.Items = new List<MerchStoredItem>();
+
+            var existingKeys = new HashSet<string>();
+            for (int i = 0; i < targetTab.Items.Count; i++)
+            {
+                var oldItem = targetTab.Items[i];
+                string key = BuildItemKey(activePageIndex, oldItem.EntityPath, oldItem.X, oldItem.Y, oldItem.W, oldItem.H);
+                existingKeys.Add(key);
+            }
+
+            var newItems = new List<MerchantItemInfo>();
+            for (int i = 0; i < currentItems.Count; i++)
+            {
+                var item = currentItems[i];
+                string key = BuildItemKey(activePageIndex, item.EntityPath, item.X, item.Y, item.W, item.H);
+
+                if (!existingKeys.Contains(key))
+                    newItems.Add(item);
+            }
+
+            if (newItems.Count == 0)
+            {
+                _lastStatus = "No new items found in current tab";
+                Log("ADD NEW ITEMS: no new items found");
+                return;
+            }
+
+            _lastStatus = "Found " + newItems.Count + " new items, scanning prices...";
+            Log("ADD NEW ITEMS: found " + newItems.Count + " new items");
+
+            await PopulatePricesForCurrentTabItems(newItems);
+
+            DateTime now = DateTime.Now;
+
+            for (int i = 0; i < newItems.Count; i++)
+            {
+                MerchantItemInfo src = newItems[i];
+
+                targetTab.Items.Add(new MerchStoredItem
+                {
+                    UiPath = src.UiPath,
+                    EntityPath = src.EntityPath,
+                    X = src.X,
+                    Y = src.Y,
+                    W = src.W,
+                    H = src.H,
+                    FirstSeenAt = now,
+                    PriceRaw = src.PriceRaw,
+                    PriceAmount = src.PriceAmount,
+                    PriceCurrency = src.PriceCurrency,
+                    PriceScannedAt = src.PriceScannedAt,
+                    PriceNoteRaw = src.PriceNoteRaw
+                });
+            }
+
+            targetTab.TabName = activeTabName;
+            targetTab.LastScanned = now;
+            targetTab.ItemCount = currentItems.Count;
+
+            allTabs.Tabs.Sort(delegate (MerchTabDump a, MerchTabDump b)
+            {
+                return a.TabIndex.CompareTo(b.TabIndex);
+            });
+
+            allTabs.KnownTabs.Sort(delegate (MerchKnownTab a, MerchKnownTab b)
+            {
+                return a.Index.CompareTo(b.Index);
+            });
+
+            File.WriteAllText(AllTabsItemsPath, JsonConvert.SerializeObject(allTabs, Formatting.Indented));
+
+            var exportItems = new List<object>();
+            for (int i = 0; i < currentItems.Count; i++)
+            {
+                MerchantItemInfo item = currentItems[i];
+                exportItems.Add(new
+                {
+                    item.UiPath,
+                    item.EntityPath,
+                    item.X,
+                    item.Y,
+                    item.W,
+                    item.H,
+                    item.PriceRaw,
+                    item.PriceAmount,
+                    item.PriceCurrency,
+                    item.PriceScannedAt,
+                    item.PriceNoteRaw
+                });
+            }
+
+            File.WriteAllText(ActiveTabItemsPath, JsonConvert.SerializeObject(new
+            {
+                DumpedAt = DateTime.Now,
+                ActiveTabIndex = activePageIndex,
+                ActiveTabName = activeTabName,
+                ItemCount = currentItems.Count,
+                Items = exportItems
+            }, Formatting.Indented));
+
+            _lastStatus = "Added " + newItems.Count + " new items to [" + activePageIndex + "] " + activeTabName;
+            Log("ADD NEW ITEMS: added " + newItems.Count + " new items");
+        }
+        catch (Exception ex)
+        {
+            Log("ADD NEW ITEMS ERROR: " + ex.Message);
+            _lastStatus = "Add new items error: " + ex.Message;
+        }
+        finally
+        {
+            _isRunningAddNewItems = false;
+        }
+    }
+
+    private async Task UpdateItemsFromSelectedTabs()
+    {
+        if (_isRunningUpdateItems)
+            return;
+
+        _isRunningUpdateItems = true;
+        _lastStatus = "Updating items in selected tabs...";
+        Log("UPDATE ITEMS: started");
+
+        try
+        {
+            dynamic ingameUi = GameController?.Game?.IngameState?.IngameUi;
+            if (ingameUi == null)
+            {
+                Log("UPDATE ITEMS: IngameUi is null");
+                return;
+            }
+
+            dynamic dropdown = GetElementByPath(ingameUi, MerchantTabDropdownPath);
+            dynamic pages = GetElementByPath(ingameUi, MerchantTabPagesPath);
+
+            if (dropdown == null || pages == null)
+            {
+                Log("UPDATE ITEMS: Merchant UI not found.");
+                return;
+            }
+
+            List<MerchantTabRow> tabRows = GetMerchantTabRowsFromKnownDropdown(dropdown);
+            if (tabRows.Count == 0)
+            {
+                Log("UPDATE ITEMS: No tab rows found.");
+                return;
+            }
+
+            MerchAllTabsDump allTabs = LoadAllTabsFile();
+            allTabs.LastUpdated = DateTime.Now;
+
+            int totalRemoved = 0;
+            int totalCheckedTabs = 0;
+
+            for (int i = 0; i < tabRows.Count; i++)
+            {
+                bool selected = Settings.SelectedTabs.ContainsKey(i) && Settings.SelectedTabs[i];
+                if (!selected)
+                    continue;
+
+                totalCheckedTabs++;
+                _lastStatus = "Updating tab [" + i + "] " + CleanupTabName(tabRows[i].Name);
+
+                bool opened = await OpenMerchantTabByIndex(i);
+                if (!opened)
+                {
+                    Log("UPDATE ITEMS: failed to open tab [" + i + "]");
+                    continue;
+                }
+
+                await Task.Delay(350);
+
+                dynamic refreshedUi = GameController?.Game?.IngameState?.IngameUi;
+                if (refreshedUi == null)
+                    continue;
+
+                dynamic refreshedPages = GetElementByPath(refreshedUi, MerchantTabPagesPath);
+                if (refreshedPages == null)
+                    continue;
+
+                int activePageIndex = GetActivePageIndex(refreshedPages);
+                if (activePageIndex < 0)
+                    continue;
+
+                dynamic activePage = null;
+                try { activePage = refreshedPages.GetChildAtIndex(activePageIndex); } catch { }
+
+                if (activePage == null)
+                    continue;
+
+                var currentItems = new List<MerchantItemInfo>();
+                CollectInventoryItems(activePage, "activePage/" + activePageIndex, currentItems);
+
+                var currentKeys = new HashSet<string>();
+                for (int j = 0; j < currentItems.Count; j++)
+                {
+                    MerchantItemInfo item = currentItems[j];
+                    string key = BuildItemKey(activePageIndex, item.EntityPath, item.X, item.Y, item.W, item.H);
+                    currentKeys.Add(key);
+                }
+
+                MerchTabDump targetTab = null;
+                for (int j = 0; j < allTabs.Tabs.Count; j++)
+                {
+                    if (allTabs.Tabs[j].TabIndex == activePageIndex)
+                    {
+                        targetTab = allTabs.Tabs[j];
+                        break;
+                    }
+                }
+
+                if (targetTab == null)
+                    continue;
+
+                int beforeCount = targetTab.Items.Count;
+
+                var keptItems = new List<MerchStoredItem>();
+                for (int j = 0; j < targetTab.Items.Count; j++)
+                {
+                    MerchStoredItem stored = targetTab.Items[j];
+                    string storedKey = BuildItemKey(activePageIndex, stored.EntityPath, stored.X, stored.Y, stored.W, stored.H);
+
+                    if (currentKeys.Contains(storedKey))
+                        keptItems.Add(stored);
+                }
+
+                int removed = beforeCount - keptItems.Count;
+                totalRemoved += removed;
+
+                targetTab.Items = keptItems;
+                targetTab.ItemCount = currentItems.Count;
+                targetTab.LastScanned = DateTime.Now;
+
+                Log("UPDATE ITEMS: tab [" + activePageIndex + "] removed " + removed + " sold/missing items");
+                await Task.Delay(120);
+            }
+
+            allTabs.Tabs.Sort(delegate (MerchTabDump a, MerchTabDump b)
+            {
+                return a.TabIndex.CompareTo(b.TabIndex);
+            });
+
+            allTabs.KnownTabs.Sort(delegate (MerchKnownTab a, MerchKnownTab b)
+            {
+                return a.Index.CompareTo(b.Index);
+            });
+
+            File.WriteAllText(AllTabsItemsPath, JsonConvert.SerializeObject(allTabs, Formatting.Indented));
+
+            _lastStatus = "Update complete: checked " + totalCheckedTabs + " tabs, removed " + totalRemoved + " items";
+            Log("UPDATE ITEMS: complete, checked " + totalCheckedTabs + " tabs, removed " + totalRemoved + " items");
+        }
+        catch (Exception ex)
+        {
+            Log("UPDATE ITEMS ERROR: " + ex.Message);
+            _lastStatus = "Update items error: " + ex.Message;
+        }
+        finally
+        {
+            _isRunningUpdateItems = false;
         }
     }
 
@@ -661,6 +1032,132 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
         }
     }
 
+    private string BuildTabSummaryText(int tabIndex)
+    {
+        try
+        {
+            MerchAllTabsDump allTabs = LoadAllTabsFile();
+            if (allTabs == null || allTabs.Tabs == null)
+                return "(0 items)";
+
+            MerchTabDump tab = null;
+            for (int i = 0; i < allTabs.Tabs.Count; i++)
+            {
+                if (allTabs.Tabs[i].TabIndex == tabIndex)
+                {
+                    tab = allTabs.Tabs[i];
+                    break;
+                }
+            }
+
+            if (tab == null || tab.Items == null || tab.Items.Count == 0)
+                return "(0 items)";
+
+            int itemCount = tab.Items.Count;
+            decimal divineTotal = 0m;
+            decimal chaosTotal = 0m;
+
+            for (int i = 0; i < tab.Items.Count; i++)
+            {
+                MerchStoredItem item = tab.Items[i];
+                if (!item.PriceAmount.HasValue || string.IsNullOrWhiteSpace(item.PriceCurrency))
+                    continue;
+
+                decimal amount = item.PriceAmount.Value;
+                string currency = NormalizeCurrency(item.PriceCurrency);
+
+                if (currency == "divine")
+                    divineTotal += amount;
+                else if (currency == "chaos")
+                    chaosTotal += amount;
+            }
+
+            string valueText = FormatValueText(divineTotal, chaosTotal);
+            return "(" + itemCount + " items, " + valueText + ")";
+        }
+        catch
+        {
+            return "(?)";
+        }
+    }
+
+    private string BuildSelectedTabsTotalSummaryText()
+    {
+        try
+        {
+            MerchAllTabsDump allTabs = LoadAllTabsFile();
+            if (allTabs == null || allTabs.Tabs == null)
+                return "Total value of all selected stashes: 0D, 0C";
+
+            decimal divineTotal = 0m;
+            decimal chaosTotal = 0m;
+
+            for (int i = 0; i < allTabs.Tabs.Count; i++)
+            {
+                MerchTabDump tab = allTabs.Tabs[i];
+                bool selected = Settings.SelectedTabs.ContainsKey(tab.TabIndex) && Settings.SelectedTabs[tab.TabIndex];
+                if (!selected || tab.Items == null)
+                    continue;
+
+                for (int j = 0; j < tab.Items.Count; j++)
+                {
+                    MerchStoredItem item = tab.Items[j];
+                    if (!item.PriceAmount.HasValue || string.IsNullOrWhiteSpace(item.PriceCurrency))
+                        continue;
+
+                    decimal amount = item.PriceAmount.Value;
+                    string currency = NormalizeCurrency(item.PriceCurrency);
+
+                    if (currency == "divine")
+                        divineTotal += amount;
+                    else if (currency == "chaos")
+                        chaosTotal += amount;
+                }
+            }
+
+            return "Total value of all selected stashes: " +
+                   (int)Math.Floor(divineTotal) + "D, " +
+                   (int)Math.Floor(chaosTotal) + "C";
+        }
+        catch
+        {
+            return "Total value of all selected stashes: ?";
+        }
+    }
+
+    private string NormalizeCurrency(string currency)
+    {
+        if (string.IsNullOrWhiteSpace(currency))
+            return "";
+
+        string c = currency.Trim().ToLowerInvariant();
+
+        if (c.Contains("divine"))
+            return "divine";
+
+        if (c.Contains("chaos"))
+            return "chaos";
+
+        return c;
+    }
+
+    private string FormatValueText(decimal divineTotal, decimal chaosTotal)
+    {
+        int divineWhole = (int)Math.Floor(divineTotal);
+        int chaosWhole = (int)Math.Floor(chaosTotal);
+
+        if (divineWhole <= 0 && chaosWhole <= 0)
+            return "no prices";
+
+        if (divineWhole > 0 && chaosWhole > 0)
+            return divineWhole + "D " + chaosWhole + "C";
+
+        if (divineWhole > 0)
+            return divineWhole + "D";
+
+        return chaosWhole + "C";
+    }
+
     private string BuildItemKey(int tabIndex, string entityPath, float x, float y, float w, float h)
     {
         return tabIndex + "|" + (entityPath ?? "-") + "|" + Round2(x) + "|" + Round2(y) + "|" + Round2(w) + "|" + Round2(h);
@@ -925,23 +1422,26 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
     public override void DrawSettings()
     {
         ImGuiNET.ImGui.TextDisabled("Open Faustus -> Merchant and expand the right-side tab dropdown");
+        ImGuiNET.ImGui.Spacing();
 
-        if (ImGuiNET.ImGui.Button("Get Merchtabs"))
-            ScanMerchantTabs();
-
-        ImGuiNET.ImGui.SameLine();
-
-        bool buttonDisabled = _isRunningGetItems;
+        bool buttonDisabled = _isRunningGetItems || _isRunningAddNewItems || _isRunningUpdateItems;
         if (buttonDisabled)
             ImGuiNET.ImGui.BeginDisabled();
 
-        if (ImGuiNET.ImGui.Button("Get Items"))
+        if (ImGuiNET.ImGui.Button("Update Merchtab Names"))
+            ScanMerchantTabs();
+
+        if (ImGuiNET.ImGui.Button("Save Items without price"))
             _ = GetItemsFromSelectedTabs(false);
 
-        ImGuiNET.ImGui.SameLine();
-
-        if (ImGuiNET.ImGui.Button("Get Items With Prices"))
+        if (ImGuiNET.ImGui.Button("Save items with price"))
             _ = GetItemsFromSelectedTabs(true);
+
+        if (ImGuiNET.ImGui.Button("New Items Added"))
+            _ = AddNewItemsToCurrentActiveTab();
+
+        if (ImGuiNET.ImGui.Button("Remove sold/removed items"))
+            _ = UpdateItemsFromSelectedTabs();
 
         if (buttonDisabled)
             ImGuiNET.ImGui.EndDisabled();
@@ -976,8 +1476,12 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
                     Settings.SelectedTabs[idx] = selected;
 
                 ImGuiNET.ImGui.SameLine();
-                ImGuiNET.ImGui.Text("[" + idx + "] " + name);
+                string summary = BuildTabSummaryText(idx);
+                ImGuiNET.ImGui.Text("[" + idx + "] " + name + " " + summary);
             }
+
+            ImGuiNET.ImGui.Spacing();
+            ImGuiNET.ImGui.TextDisabled(BuildSelectedTabsTotalSummaryText());
         }
 
         ImGuiNET.ImGui.Spacing();
@@ -1011,12 +1515,6 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
             _highlightTabIndex = -1;
             _lastStatus = "Highlights cleared";
         }
-
-        ImGuiNET.ImGui.Spacing();
-        ImGuiNET.ImGui.TextDisabled("Files:");
-        ImGuiNET.ImGui.BulletText("merchant_tab_indices.json");
-        ImGuiNET.ImGui.BulletText("merchant_active_tab_items.json");
-        ImGuiNET.ImGui.BulletText("merchant_all_tabs_items.json");
     }
 
     public override void Render()
