@@ -19,8 +19,8 @@ public class MerchTabPlugin : BaseSettingsPlugin<MerchTabSettings>
     private string ActiveTabItemsPath => Path.Combine(DirectoryFullName, "merchant_active_tab_items.json");
     private string AllTabsItemsPath => Path.Combine(DirectoryFullName, "merchant_all_tabs_items.json");
 
-    private static readonly int[] RepriceValueInputPath = { 178, 2, 0, 0 };
-    private static readonly int[] RepriceListItemPath = { 178, 2, 0, 2, 0 };
+    private static readonly int[] RepriceValueInputPath = { 191, 2, 0, 0 };
+    private static readonly int[] RepriceListItemPath = { 191, 2, 0, 2};
 
     private MerchantUiService _ui;
     private MerchantScanService _scan;

@@ -1,7 +1,7 @@
 {
-  "version": 3,
+  "version": 4,
   "targets": {
-    "net10.0-windows7.0": {
+    "net10.0-windows": {
       "ImGui.NET/1.90.0.1": {
         "type": "package",
         "compile": {
@@ -99,7 +99,7 @@
         }
       }
     },
-    "net10.0-windows7.0/win-x64": {
+    "net10.0-windows/win-x64": {
       "ImGui.NET/1.90.0.1": {
         "type": "package",
         "compile": {
@@ -309,35 +309,43 @@
     }
   },
   "projectFileDependencyGroups": {
-    "net10.0-windows7.0": [
+    "net10.0-windows": [
       "ImGui.NET >= 1.90.0.1",
       "Newtonsoft.Json >= 13.0.3",
       "SharpDX.Mathematics >= 4.2.0"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\yanik\\.nuget\\packages\\": {}
+    "C:\\Users\\yanik\\.nuget\\packages\\": {},
+    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\yanik\\Documents\\ExileApi-Compiled-328.7\\Plugins\\Source\\MerchTabPlugin\\MerchTabPlugin.csproj",
+      "projectUniqueName": "C:\\Users\\yanik\\Documents\\ExileApi-Compiled-329.9\\Plugins\\Source\\MerchTabPlugin-for-ExileAPI\\MerchTabPlugin.csproj",
       "projectName": "MerchTabPlugin",
-      "projectPath": "C:\\Users\\yanik\\Documents\\ExileApi-Compiled-328.7\\Plugins\\Source\\MerchTabPlugin\\MerchTabPlugin.csproj",
+      "projectPath": "C:\\Users\\yanik\\Documents\\ExileApi-Compiled-329.9\\Plugins\\Source\\MerchTabPlugin-for-ExileAPI\\MerchTabPlugin.csproj",
       "packagesPath": "C:\\Users\\yanik\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\yanik\\Documents\\ExileApi-Compiled-328.7\\Plugins\\Source\\MerchTabPlugin\\obj\\",
+      "outputPath": "C:\\Users\\yanik\\Documents\\ExileApi-Compiled-329.9\\Plugins\\Source\\MerchTabPlugin-for-ExileAPI\\obj\\",
       "projectStyle": "PackageReference",
+      "fallbackFolders": [
+        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+      ],
       "configFilePaths": [
-        "C:\\Users\\yanik\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\yanik\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
         "net10.0-windows"
       ],
       "sources": {
+        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
-        "net10.0-windows7.0": {
+        "net10.0-windows": {
+          "framework": "net10.0-windows7.0",
           "targetAlias": "net10.0-windows",
           "projectReferences": {}
         }
@@ -352,10 +360,11 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.100"
+      "SdkAnalysisLevel": "10.0.300"
     },
     "frameworks": {
-      "net10.0-windows7.0": {
+      "net10.0-windows": {
+        "framework": "net10.0-windows7.0",
         "targetAlias": "net10.0-windows",
         "dependencies": {
           "ImGui.NET": {
@@ -390,7 +399,7 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.302/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.CSharp": "(,4.7.32767]",
           "Microsoft.VisualBasic": "(,10.4.32767]",

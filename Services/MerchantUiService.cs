@@ -12,8 +12,8 @@ public class MerchantUiService
     private readonly GameController _gc;
     private readonly Random _rng = new Random();
 
-    public static readonly int[] MerchantTabDropdownPath = { 44, 2, 0, 0, 1, 1, 0, 0, 1, 4, 2 };
-    public static readonly int[] MerchantTabPagesPath = { 44, 2, 0, 0, 1, 1, 0, 0, 1, 1 };
+    public static readonly int[] MerchantTabDropdownPath = { 51, 2, 0, 0, 1, 1, 0, 0, 1, 4, 2 };
+    public static readonly int[] MerchantTabPagesPath = { 51, 2, 0, 0, 1, 1, 0, 0, 1, 1 };
 
     public MerchantUiService(GameController gc)
     {

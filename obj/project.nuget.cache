@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "prfMPbXKMi0=",
+  "dgSpecHash": "af1w7fB1yFQ=",
   "success": true,
-  "projectFilePath": "C:\\Users\\yanik\\Documents\\ExileApi-Compiled-328.7\\Plugins\\Source\\MerchTabPlugin\\MerchTabPlugin.csproj",
+  "projectFilePath": "C:\\Users\\yanik\\Documents\\ExileApi-Compiled-329.9\\Plugins\\Source\\MerchTabPlugin-for-ExileAPI\\MerchTabPlugin.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\yanik\\.nuget\\packages\\imgui.net\\1.90.0.1\\imgui.net.1.90.0.1.nupkg.sha512",
     "C:\\Users\\yanik\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
